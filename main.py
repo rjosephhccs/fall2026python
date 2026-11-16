@@ -1,5 +1,4 @@
-"""Local learning version. Java authentication is NOT connected yet."""
-import os
+"""Inventory API: Java token validation and PostgreSQL employee lookup."""
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -23,6 +22,7 @@ app.add_middleware(
     allow_methods=['GET', 'POST', 'PUT'],
     allow_headers=['Content-Type', 'Authorization'],
 )
+
 
 #===========================AUTHENTICATION=========================================
 # Temporary user class for local testing. Replace with Java authentication later.
@@ -97,13 +97,16 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
 
 # POST endpoint to create a new order
 @app.post('/api/orders', status_code=201)
-def create_order(order: OrderCreate, user: CurrentUser = Depends(order_creator), db: Session = Depends(get_db)):
-    temp_user_id = 1  # temporary ID user fo PRODUCT MANAGER
+def create_order(
+    order: OrderCreate,
+    user: CurrentUser = Depends(order_creator),
+    db: Session = Depends(get_db),
+):
 
     # Create the order.
     query = text('SELECT public.create_pending_order(:user_id)')
     order_id = db.execute(query, {
-        'user_id': temp_user_id
+        'user_id': user.user_id
     }).scalar_one()
 
     # Add the products.
