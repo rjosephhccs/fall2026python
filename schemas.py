@@ -23,6 +23,9 @@ class ProductUpdate(BaseModel):
     )
     reorder_level: int = Field(..., ge=0)
 
+class OrderItemAdd(BaseModel):
+    product_id: int = Field(gt=0, strict=True)
+    quantity: int = Field(gt=0, strict=True)
 
 class OrderCreate(BaseModel):
     items: list[OrderItemAdd] = Field(min_length=1)

@@ -1,12 +1,11 @@
-"""Local learning version. Java authentication is NOT connected yet."""
-import os
+"""Inventory API: Java token validation and PostgreSQL employee lookup."""
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-from database import get_db
-from auth import CurrentUser, get_current_user, require_roles
+from app.database import get_db
+from app.auth import CurrentUser, get_current_user, require_roles
 from schemas import ProductCreate, ProductUpdate, OrderCreate, StockAdd
 
 
@@ -18,11 +17,12 @@ app = FastAPI(
 # Allow the local Angular development server to call this API.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:4200', 'http://127.0.0.1:4200'],
+    allow_origins=['*','http://localhost:4200', 'http://127.0.0.1:4200'],
     allow_credentials=False,
     allow_methods=['GET', 'POST', 'PUT'],
     allow_headers=['Content-Type', 'Authorization'],
 )
+
 
 #===========================AUTHENTICATION=========================================
 # Temporary user class for local testing. Replace with Java authentication later.
@@ -56,8 +56,12 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 # POST a new product. Stock is set to 0 by default. Reorder level is optional.
 @app.post('/api/products', status_code=201, dependencies=[Depends(inventory_editor)])
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    query = text('SELECT public.create_product(:name, :sku, :description, :price, :reorder_level)')
-    product_id = db.execute(query, product.model_dump()).scalar_one()
+    query = text('SELECT public.create_product(:name, :description, :sku, :quantity, :price, :reorder_level)')
+    # ProductCreate does not include quantity: initial stock must start at zero.
+    # The stock-transactions endpoint is responsible for stock adjustments.
+    values = product.model_dump()
+    values['quantity'] = 0
+    product_id = db.execute(query, values).scalar_one()
     db.commit()
     return {'message': 'Product created', 'product_id': product_id}
 
@@ -97,13 +101,16 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
 
 # POST endpoint to create a new order
 @app.post('/api/orders', status_code=201)
-def create_order(order: OrderCreate, user: CurrentUser = Depends(order_creator), db: Session = Depends(get_db)):
-    temp_user_id = 1  # temporary ID user fo PRODUCT MANAGER
+def create_order(
+    order: OrderCreate,
+    user: CurrentUser = Depends(order_creator),
+    db: Session = Depends(get_db),
+):
 
     # Create the order.
     query = text('SELECT public.create_pending_order(:user_id)')
     order_id = db.execute(query, {
-        'user_id': temp_user_id
+        'user_id': user.user_id
     }).scalar_one()
 
     # Add the products.

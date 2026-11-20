@@ -11,7 +11,7 @@ load_dotenv()
 url = URL.create(
     'postgresql+psycopg',
     username=os.getenv('DB_USER', 'inventory_python_login'),
-    password=os.getenv('DB_PASSWORD', ''),
+    password=os.getenv('DB_PASSWORD', 'inventory_python_login'),
     host=os.getenv('DB_HOST', 'localhost'),
     port=int(os.getenv('DB_PORT', '5432')),
     database=os.getenv('DB_NAME', 'inventory_management_dev'),

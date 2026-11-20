@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from database import get_db
+from app.database import get_db
 
 bearer = HTTPBearer(auto_error=False)
 ROLES = {'SUPER_USER', 'INVENTORY_MANAGER', 'PRODUCT_MANAGER'}
@@ -29,7 +29,7 @@ def unauthorized():
 
 
 def validate_with_java(token: str) -> str:
-    base_url = os.getenv('JAVA_AUTH_URL', 'http://localhost:8081').rstrip('/')
+    base_url = os.getenv('JAVA_AUTH_URL', 'http://localhost:8080').rstrip('/')
     try:
         # Use a short timeout and disable environment proxy settings to avoid
         # Hanging the API if the Java service is down or misconfigured.
